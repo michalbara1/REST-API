@@ -1,0 +1,4 @@
+### Add a New Post POST http://localhost:3000/api/posts Content-Type: application/json
+{
+"title": "My First Post", "content": "This is the content of my first post.", "senderId": "1235"
+}
