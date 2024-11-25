@@ -20,7 +20,6 @@ const getAllComments = (req, res) => {
       .catch((err) => res.status(400).json({ message: 'Error fetching comments', error: err.message }));
   };
 
- 
   const getCommentsByPost = (req, res) => {
     const { postId } = req.params;
   
@@ -41,6 +40,7 @@ const getAllComments = (req, res) => {
       })
       .catch((err) => res.status(500).json({ message: 'Error fetching comment', error: err.message }));
   };
+  
 
   const updateComment = (req, res) => {
     const { commentId } = req.params;
@@ -69,6 +69,4 @@ const getAllComments = (req, res) => {
       .catch((err) => res.status(500).json({ message: 'Error deleting comment', error: err.message }));
   };
 
-
-
-module.exports = { createComment,getAllComments,getCommentsByPost,getCommentById,updateComment,deleteComment}
+  module.exports = { createComment, getAllComments,getCommentsByPost,getCommentById,updateComment,deleteComment };

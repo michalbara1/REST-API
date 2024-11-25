@@ -53,6 +53,7 @@ exports.getPostsBySender = async (req, res) => {
     });
   }
 };
+
 exports.getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find();
@@ -65,20 +66,48 @@ exports.getAllPosts = async (req, res) => {
     });
   }
 };
-const postId = req.params.id; 
-try {
-  const post = await Post.findById(postId); 
-  if (!post) {
-    return res.status(404).json({ message: 'Post not found' });
+exports.getPostById = async (req, res) => {
+  const postId = req.params.id; 
+  try {
+    const post = await Post.findById(postId); 
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    res.status(200).json({
+      message: 'Post fetched successfully',
+      post: post
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to fetch post',
+      error: error.message
+    });
   }
-  res.status(200).json({
-    message: 'Post fetched successfully',
-    post: post
-  });
-} catch (error) {
-  console.error(error);
-  res.status(500).json({
-    message: 'Failed to fetch post',
-    error: error.message
-  });
-}
+};
+
+exports.updatePost = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { title, content, senderId, owner } = req.body;
+    const updatedPost = await Post.findByIdAndUpdate(postId, {
+      title,
+      content,
+      senderId,  
+      owner,     
+    }, { new: true });  
+    if (!updatedPost) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    res.status(200).json({
+      message: 'Post updated successfully',
+      post: updatedPost,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to update post',
+      error: error.message,
+    });
+  }
+};
