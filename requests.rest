@@ -1,10 +1,52 @@
-### Add a New Post POST http://localhost:3000/api/posts Content-Type: application/json
+### Add a New Post
+POST http://localhost:3000/api/posts 
+Content-Type: application/json
+
 {
-"title": "My First Post", "content": "This is the content of my first post.", "senderId": "1235"
+  "title": "My First Post",
+  "content": "This is the content of my first post.",
+  "senderId": "124"
 }
-
- ### Create a comment POST http://localhost:3000/api/comments Content-Type: application/json
+### Get All Posts
+GET http://localhost:3000/api/getposts
+###Get post by Id
+GET http://localhost:3000/api/posts/673a13dd7b94e5067bea5be9
+###Get post by sender Id
+GET http://localhost:3000/api/posts?sender=124
+### Update Post
+PUT http://localhost:3000/api/posts/673a16bf7b94e5067bea5bec
+Content-Type: application/json
 
 {
-"content": "check to see comment", "postId": "67406927fbde634430a5db31", "owner": "Michal"
-} ### Get all comments GET http://localhost:3000/api/comments ### Get all comments for a specific post GET http://localhost:3000/api/comments/posts/67406927fbde634430a5db31 ### Get a specific comment by its ID GET http://localhost:3000/api/comments/674074f39b8f39e158b0524a
+  "title": "Updated Post Title",
+  "content": "This is the updated content of the post.",
+  "senderId": "1234",
+  "owner": "michal"
+}
+### Create a comment
+POST http://localhost:3000/api/comments
+Content-Type: application/json
+
+{
+  "content": "check to see comment",
+  "postId": "67406927fbde634430a5db31",
+  "owner": "Michal"
+}
+### Get all comments
+GET http://localhost:3000/api/comments
+### Get all comments for a specific post
+GET http://localhost:3000/api/comments/posts/67406927fbde634430a5db31
+### Get a specific comment by its ID
+GET http://localhost:3000/api/comments/6741a5e9b9e7000324216e72
+
+### Update a specific comment by its ID
+PUT http://localhost:3000/api/comments/6741a5e9b9e7000324216e72
+Content-Type: application/json
+
+{
+  "content": "This is an updated comment",
+  "owner": "Michal"
+}
+### Delete a specific comment by its ID
+DELETE http://localhost:3000/api/comments/6741a5e9b9e7000324216e72
+
