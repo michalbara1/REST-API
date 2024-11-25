@@ -2,3 +2,9 @@
 {
 "title": "My First Post", "content": "This is the content of my first post.", "senderId": "1235"
 }
+
+ ### Create a comment POST http://localhost:3000/api/comments Content-Type: application/json
+
+{
+"content": "check to see comment", "postId": "67406927fbde634430a5db31", "owner": "Michal"
+} ### Get all comments GET http://localhost:3000/api/comments ### Get all comments for a specific post GET http://localhost:3000/api/comments/posts/67406927fbde634430a5db31 ### Get a specific comment by its ID GET http://localhost:3000/api/comments/674074f39b8f39e158b0524a
