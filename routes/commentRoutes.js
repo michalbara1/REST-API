@@ -4,4 +4,6 @@ const commentController = require('../controllers/commentController');  // Adjus
 
 router.post('/comments', commentController.createComment);
 
+router.get('/comments', commentController.getAllComments);
+
 module.exports = router;
