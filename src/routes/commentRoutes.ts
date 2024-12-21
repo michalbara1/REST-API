@@ -4,6 +4,8 @@ import commentController from "../controllers/commentController";
 
 router.post('/', commentController.create.bind(commentController));
 
+router.get('/', commentController.getAll.bind(commentController)); // to get comments by owner
+
 router.get('/getcomments', commentController.getAll.bind(commentController));
 
 router.get('/:id', commentController.getById.bind(commentController));
