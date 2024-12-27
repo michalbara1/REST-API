@@ -5,19 +5,16 @@ import bodyParser from "body-parser";
 import express, { Express } from "express";
 import postsRoute from "./routes/postRoutes";
 import commentsRoute from "./routes/commentRoutes";
-import userssRoute from "./routes/userRoutes";
-
-// handle unhandled promise rejections globally
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-});
+import usersRoute from "./routes/userRoutes";
+import authRoute from "./routes/authRoutes";
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/posts", postsRoute);
 app.use("/comments", commentsRoute);
-app.use("/users", userssRoute);
+app.use("/users", usersRoute);
+app.use("/auth", authRoute);
 
 const db = mongoose.connection;
 db.on("error", (error) => console.error(error));
