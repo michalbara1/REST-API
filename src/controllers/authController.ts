@@ -183,8 +183,10 @@ type Payload = {
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const authorization = req.header('authorization');
+    if (!authorization) {
+        return res.status(401).send("Access Denied");
+    }
     const token = authorization && authorization.split(' ')[1];
-
     if (!token) {
         res.status(401).send('Access Denied');
         return;

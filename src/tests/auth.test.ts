@@ -207,4 +207,43 @@ describe("Auth Tests", () => {
     expect(response.text).toBe('fail');
   });
 
+  test("should return 401 if token is missing", async () => {
+    const response = await request(app)
+      .post("/posts")  
+      .send({
+        title: "Test Post",
+        content: "This is a test post."
+      });
+    
+    expect(response.statusCode).toBe(401); 
+    expect(response.text).toBe("Access Denied"); 
+  });
+
+  test("should return 401 if token is invalid", async () => {
+    const invalidToken = "thisisnotavalidjwtstring";
+  
+    const response = await request(app)
+      .post("/posts")  
+      .set("Authorization", `JWT ${invalidToken}`)
+      .send({
+        title: "Test Post",
+        content: "This is a test post."
+      });
+
+    expect(response.statusCode).toBe(401);  
+    expect(response.text).toBe("Access Denied"); 
+  });
+
+  test("should return 400 when refresh token is missing", async () => {
+    const response = await request(app).post(baseUrl + "/refresh").send({});
+    expect(response.statusCode).toBe(400);
+    expect(response.text).toBe("fail");
+  });
+
+  test("should return 400 when refresh token is invalid", async () => {
+    const response = await request(app).post(baseUrl + "/refresh").send({ refreshToken: "invalidToken" });
+    expect(response.statusCode).toBe(400);
+    expect(response.text).toBe("fail");
+  });
+  
 });
