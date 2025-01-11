@@ -112,6 +112,98 @@ describe("BaseController Tests", () => {
         .set("Authorization", "JWT " + testUser.token);
         expect(response.statusCode).toBe(400);
     });
+  
+    describe("BaseController Tests - Additional Test Cases", () => {
 
+      test("should get all posts with no filters", async () => {
+        const response = await request(app).get("/posts");
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true); 
+      });
+    
+      test("should return empty array for getAll with invalid senderId", async () => {
+        const invalidUserId = "5f50c31e9d2e7e5d935c71ff";
+        const response = await request(app).get("/posts?senderId=" + invalidUserId);
+        expect(response.statusCode).toBe(200); 
+        expect(response.body.length).toBe(0);  
+      });
+    
+      test("should return 400 when creating a post with missing title", async () => {
+        const response = await request(app).post("/posts")
+          .set("Authorization", "JWT " + testUser.token)
+          .send({
+            content: "This is a post without a title", 
+            owner: testUser._id,
+          });
+        expect(response.statusCode).toBe(400);  
+        expect(response.body.message).toBeDefined(); 
+      });
+    
+      test("should return 400 when deleting a post with invalid ID", async () => {
+        const invalidPostId = "5f50c31e9d2e7e5d935c71ffyryuhy"; 
+        const response = await request(app).delete("/posts/" + invalidPostId)
+          .set("Authorization", "JWT " + testUser.token);
+        expect(response.statusCode).toBe(400); 
+      });
+    
+      test("should return posts when querying by senderId", async () => {
+        const response = await request(app).get("/posts?senderId=" + testUser._id);
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);  
+        response.body.forEach((post: { senderId: string }) => {
+          expect(post.senderId).toBe(testUser._id);  
+        });
+      });
+    
+    
+      test("should return 404 if querying for non-existent field", async () => {
+        const response = await request(app).get("/posts/unknownField/xyz")
+          .set("Authorization", "JWT " + testUser.token);
+        expect(response.statusCode).toBe(404);  
+        expect(response.body).toEqual({});  
+      });
+    
+    
+      test("should return 200 when retrieving posts by query params (senderId and owner)", async () => {
+        const response = await request(app).get("/posts?senderId=" + testUser._id + "&owner=" + testUser._id);
+        expect(response.statusCode).toBe(200);  
+        expect(Array.isArray(response.body)).toBe(true); 
+      });
+
+      test("should return 400 when no posts are found for a specific field value", async () => {
+        const response = await request(app).get("/posts/owner").query({ owner: "nonExistentOwnerId" });
+        expect(response.statusCode).toBe(400);  
+        expect(response.body).toHaveProperty("message");
+      });
+
+      test("should return 400 when deleteItem is called with invalid ID format", async () => {
+        const response = await request(app).delete("/posts/invalidIdFormat")
+          .set("Authorization", "JWT " + testUser.token);
+        expect(response.statusCode).toBe(400);
+        expect(response.body.message).toBe("Invalid ID format");
+      });
+
+      test("should return 400 when update is called with invalid data", async () => {
+        const response = await request(app).put("/posts/" + postId)
+          .set("Authorization", "JWT " + testUser.token)
+          .send({
+            title: "",
+            content: "",
+          });
+        expect(response.statusCode).toBe(404);
+      });
+
+      test("should return 400 when create is called with invalid data", async () => {
+        const response = await request(app).post("/posts")
+          .set("Authorization", "JWT " + testUser.token)
+          .send({
+            title: "",
+            content: "",
+            owner: testUser._id,
+          });
+        expect(response.statusCode).toBe(400);
+      });
+ 
+    });
 });
 

@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { Model } from "mongoose";
+import mongoose from 'mongoose';
+
 
 class BaseController<T> {
     model: Model<T>;
@@ -8,15 +10,13 @@ class BaseController<T> {
     }
 
     async getAll(req: Request, res: Response) {
-        const { senderId, owner } = req.query;  // Get sender and owner from query parameters
+        const { senderId, owner } = req.query;  
         const filter: Record<string, any> = {};
-
-        if (senderId) filter.senderId = senderId;  // If sender is passed, filter by sender
-        if (owner) filter.owner = owner;  // If owner is passed, filter by owner
-
+        if (senderId) filter.senderId = senderId;  
+        if (owner) filter.owner = owner;  
         try {
-            const items = await this.model.find(filter);  // Apply the filter to the model
-            res.send(items);  // Return the filtered items
+            const items = await this.model.find(filter);  
+            res.send(items);  
         } catch (error) {
             res.status(400).send(error);
         }
@@ -50,6 +50,9 @@ class BaseController<T> {
 
     async deleteItem(req: Request, res: Response) {
         const id = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).send({ message: "Invalid ID format" }); 
+        }        
         try {
             const rs = await this.model.findByIdAndDelete(id);
             res.status(200).send(rs);
@@ -83,14 +86,15 @@ class BaseController<T> {
         try {
             const updatedItem = await this.model.findByIdAndUpdate(id, updateData, { new: true });
             if (!updatedItem) {
-                res.status(404).send("Not found");
+                 res.status(404).send("Not found"); 
             } else {
-                res.status(200).send(updatedItem);
+                 res.status(200).send(updatedItem);  
             }
         } catch (error) {
-            res.status(400).send(error);
+             res.status(400).send(error);  
         }
     }
+    
 
     async getByField(req: Request, res: Response): Promise<void> { // for get comment by post id
         const fieldName = req.params.field; 
