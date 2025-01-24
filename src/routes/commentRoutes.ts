@@ -53,14 +53,18 @@ import commentController from "../controllers/commentController";
  *           schema:
  *             type: object
  *             properties:
- *               content:
+ *               comment:
  *                 type: string
  *                 description: The content of the comment
+ *               owner:
+ *                 type: string
+ *                 description: The ID of the user who owns the comment
  *               postId:
  *                 type: string
- *                 description: The id of the post the comment belongs to
+ *                 description: The ID of the post the comment belongs to
  *             required:
- *               - content
+ *               - comment
+ *               - owner
  *               - postId
  *     responses:
  *       201:

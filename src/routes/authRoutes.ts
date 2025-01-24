@@ -10,6 +10,15 @@ import authController from "../controllers/authController";
  *   description: The Authentication API
  */
 /**
+* @swagger
+* components:
+*   securitySchemes:
+*     bearerAuth:
+*       type: http
+*       scheme: bearer
+*       bearerFormat: JWT
+*/
+/**
  * @swagger
  * components:
  *   schemas:
