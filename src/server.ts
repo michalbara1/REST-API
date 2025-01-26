@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import express, { Express } from "express";
 import postsRoute from "./routes/postRoutes";
 import commentsRoute from "./routes/commentRoutes";
+import fileRoute from "./routes/fileRoutes";
 import usersRoute from "./routes/userRoutes";
 import authRoute from "./routes/authRoutes";
 import swaggerJsDoc from 'swagger-jsdoc';
@@ -23,6 +24,10 @@ app.use("/posts", postsRoute);
 app.use("/comments", commentsRoute);
 app.use("/users", usersRoute);
 app.use("/auth", authRoute);
+app.use("/file", fileRoute);
+
+app.use("/public", express.static("public"));
+app.use(express.static("front"));
 
 const options = {
   definition: {
