@@ -15,11 +15,11 @@ const register = async (req: Request, res: Response) => {
         const user = await userModel.create({
             email,
             password: hashedPassword,
-            avatar: avatar || null, // Ensure avatar is null if not present
+            avatar: avatar || null, 
         });
         res.status(200).send(user);
     } catch (err) {
-        console.error('Registration Error:', err); // Log the error details
+        console.error('Registration Error:', err); 
         res.status(400).send(err || "Unknown error during registration");
     }
 };
