@@ -3,9 +3,10 @@ const router = express.Router();
 import multer from "multer";
 
 const base = process.env.DOMAIN_BASE + "/";
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'public/')
+        cb(null, './storage')
     },
     filename: function (req, file, cb) {
         const ext = file.originalname.split('.')

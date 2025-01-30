@@ -26,6 +26,7 @@ app.use("/users", usersRoute);
 app.use("/auth", authRoute);
 app.use("/file", fileRoute);
 
+app.use("/storage", express.static("storage"));
 app.use("/public", express.static("public"));
 app.use(express.static("front"));
 
