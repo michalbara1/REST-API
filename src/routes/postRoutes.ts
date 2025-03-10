@@ -1,181 +1,209 @@
-import express from "express";
-const router = express.Router();
-import postController from "../controllers/postController";
-import { authMiddleware } from "../controllers/authController";
+import express, { Router } from 'express';
+import postController from '../controllers/postController';
+import authMiddleware from '../middleware/authMiddleware';
+import multerMiddleware from '../middleware/multerMiddleware';
 
-/**
-* @swagger
-* tags:
-*   name: Posts
-*   description: The Posts API
-*/
-/**
- * @swagger
- * components:
- *   schemas:
- *     Post:
- *       type: object
- *       required:
- *         - title
- *         - content
- *       properties:
- *         _id:
- *           type: string
- *           description: The auto-generated id of the post
- *         title:
- *           type: string
- *           description: The title of the post
- *         content:
- *           type: string
- *           description: The content of the post
- *         owner:
- *           type: string
- *           description: The owner id of the post
- *       example:
- *         _id: 245234t234234r234r23f4
- *         title: My First Post
- *         content: This is the content of my first post.
- *         author: 324vt23r4tr234t245tbv45by
- */
-
-/**
- * @swagger
- * /posts:
- *   post:
- *     summary: Create a new post
- *     description: Create a new post
- *     tags:
- *       - Posts
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 description: The title of the post
- *               content:
- *                 type: string
- *                 description: The content of the post
- *             required:
- *               - title
- *               - content
- *     responses:
- *       201:
- *         description: Post created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
- *       400:
- *         description: Invalid input
- *       500:
- *         description: Server error
- */
-
-router.post("/", authMiddleware, postController.create.bind(postController));
+const router: Router = express.Router();
 
 /**
  * @swagger
  * /posts:
  *   get:
  *     summary: Get all posts
- *     description: Retrieve a list of all posts
- *     tags:
- *       - Posts
+ *     tags: [Posts]
  *     responses:
  *       200:
- *         description: A list of posts
+ *         description: Successful operation
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Post'
- *       500:
- *         description: Server error
  */
-
-router.get('/getposts', postController.getAll.bind(postController));
+router.get('/posts', postController.getAllPosts);
 
 /**
  * @swagger
- * /posts/{id}:
+ * /posts/sender:
  *   get:
- *     summary: Get a post by ID
- *     description: Retrieve a single post by its ID
- *     tags:
- *       - Posts
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the post
+ *     summary: Get posts by sender
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A single post
+ *         description: Successful operation
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Post'
- *       404:
- *         description: Post not found
- *       500:
- *         description: Server error
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
  */
-
-router.get('/:id',postController.getById.bind(postController));
+router.get('/posts/sender', authMiddleware, postController.getPostsBySender);
 
 /**
  * @swagger
  * /posts:
- *   get:
- *     summary: Get posts by sender Id
- *     description: Retrieve a list of posts by sender Id
- *     tags:
- *       - Posts
- *     parameters:
- *       - in: query
- *         name: senderId
- *         schema:
- *           type: string
- *         required: false
- *         description: The ID of the sender
+ *   post:
+ *     summary: Create a new post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Post'
  *     responses:
- *       200:
- *         description: A list of posts
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Post'
+ *       201:
+ *         description: Post created successfully
+ *       400:
+ *         description: Problem with creating post
  *       500:
- *         description: Server error
+ *         description: Internal server error
  */
+router.post('/posts', authMiddleware, postController.savePost);
 
-router.get('/', postController.getAll.bind(postController)); 
 /**
  * @swagger
- * /posts/{id}:
+ * /posts/like/{id}:
  *   put:
- *     summary: Update a post by ID
- *     description: Update a single post by its ID
- *     tags:
- *       - Posts
+ *     summary: Like a post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the post
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post liked/unliked successfully
+ *       400:
+ *         description: Problem with liking/unliking post
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/posts/like/:id', authMiddleware, postController.likePost);
+
+/**
+ * @swagger
+ * /posts/{id}:
+ *   get:
+ *     summary: Get post by ID
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Successful operation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ */
+router.get('/posts/:id', postController.getPostById);
+
+/**
+ * @swagger
+ * /posts/{id}:
+ *   put:
+ *     summary: Update post by ID
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Post ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Post'
+ *     responses:
+ *       201:
+ *         description: Post updated successfully
+ *       400:
+ *         description: Problem with updating post
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/posts/:id', authMiddleware, postController.updateById);
+
+/**
+ * @swagger
+ * /posts/{id}:
+ *   delete:
+ *     summary: Delete post by ID
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post deleted successfully
+ *       400:
+ *         description: Problem with deleting post
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/posts/:id', authMiddleware, postController.deletePost);
+
+/**
+ * @swagger
+ * /posts/upload:
+ *   post:
+ *     summary: Upload a photo
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Photo uploaded successfully
+ *       400:
+ *         description: Problem with uploading photo
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/posts/storage',multerMiddleware, postController.savePhoto);
+/**
+ * @swagger
+ * /posts/ai:
+ *   post:
+ *     summary: Generate AI content
+ *     tags: [Posts]
  *     requestBody:
  *       required: true
  *       content:
@@ -185,54 +213,13 @@ router.get('/', postController.getAll.bind(postController));
  *             properties:
  *               title:
  *                 type: string
- *                 description: The title of the post
- *               content:
- *                 type: string
- *                 description: The content of the post
- *             required:
- *               - title
- *               - content
  *     responses:
  *       200:
- *         description: Post updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
- *       404:
- *         description: Post not found
+ *         description: AI content generated successfully
  *       500:
- *         description: Server error
+ *         description: Problem with generating AI content
  */
+router.post('/posts/ai', postController.getAiContent);
 
-router.put('/:id', postController.update.bind(postController));
-
-/**
- * @swagger
- * posts/{id}:
- *   delete:
- *     summary: Delete a post by ID
- *     description: Delete a single post by its ID
- *     tags:
- *       - Posts
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the post
- *     responses:
- *       200:
- *         description: Post deleted successfully
- *       404:
- *         description: Post not found
- *       500:
- *         description: Server error
- */
-
-router.delete("/:id", authMiddleware, postController.deleteItem.bind(postController));
 
 export default router;

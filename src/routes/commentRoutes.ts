@@ -1,174 +1,102 @@
-import express from "express";
-const router = express.Router();
-import commentController from "../controllers/commentController";
+import express, { Router } from 'express';
+import commentsControllers from '../controllers/commentController';
+import authMiddleware from '../middleware/authMiddleware';
 
-/**
- * @swagger
- * tags:
- *   name: Comments
- *   description: The Comments API
- */
-/**
- * @swagger
- * components:
- *   schemas:
- *     Comment:
- *       type: object
- *       required:
- *         - comment
- *         - postId
- *         - owner
- *       properties:
- *         _id:
- *           type: string
- *           description: The auto-generated id of the comment
- *         comment:
- *           type: string
- *           description: The content of the comment
- *         postId:
- *           type: string
- *           description: The id of the post the comment belongs to
- *         owner:
- *           type: string
- *           description: The owner id of the comment
- *       example:
- *         _id: 1234567890abcdef
- *         comment: This is a comment.
- *         postId: 0987654321fedcba
- *         owner: 1234567890abcdef
- */
+const router: Router = express.Router();
 
 /**
  * @swagger
  * /comments:
  *   post:
- *     summary: Create a new comment
- *     description: Create a new comment
- *     tags:
- *       - Comments
+ *     summary: Post a new comment
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               comment:
- *                 type: string
- *                 description: The content of the comment
- *               owner:
- *                 type: string
- *                 description: The ID of the user who owns the comment
- *               postId:
- *                 type: string
- *                 description: The ID of the post the comment belongs to
- *             required:
- *               - comment
- *               - owner
- *               - postId
+ *             $ref: '#/components/schemas/Comment'
  *     responses:
  *       201:
  *         description: Comment created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Comment'
  *       400:
- *         description: Invalid input
+ *         description: Problem with new comment
  *       500:
- *         description: Server error
+ *         description: Internal server error
  */
+router.post('/comment', authMiddleware, commentsControllers.postComment);
 
-router.post('/', commentController.create.bind(commentController));
 /**
  * @swagger
- * /comments:
+ * /comments/{commentId}:
  *   get:
- *     summary: Get comments by owner
- *     description: Retrieve a list of comments by owner
- *     tags:
- *       - Comments
- *     responses:
- *       200:
- *         description: A list of comments
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Comment'
- *       500:
- *         description: Server error
- */
-
-router.get('/', commentController.getAll.bind(commentController)); 
-/**
- * @swagger
- * /comments/getcomments:
- *   get:
- *     summary: Get all comments
- *     description: Retrieve a list of all comments
- *     tags:
- *       - Comments
- *     responses:
- *       200:
- *         description: A list of comments
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Comment'
- *       500:
- *         description: Server error
- */
-
-router.get('/getcomments', commentController.getAll.bind(commentController));
-/**
- * @swagger
- * /comments/{id}:
- *   get:
- *     summary: Get a comment by ID
- *     description: Retrieve a single comment by its ID
- *     tags:
- *       - Comments
+ *     summary: Read a comment
+ *     tags: [Comments]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: commentId
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the comment
+ *         description: Comment ID
  *     responses:
  *       200:
- *         description: A single comment
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Comment'
- *       404:
- *         description: Comment not found
+ *         description: Comment fetched successfully
+ *       400:
+ *         description: Problem with fetching comment
  *       500:
- *         description: Server error
+ *         description: Internal server error
  */
-
-router.get('/:id', commentController.getById.bind(commentController));
+router.get('/comment/:commentId', commentsControllers.readComment);
 
 /**
  * @swagger
- * /comments/{id}:
+ * /comments/{commentId}:
  *   put:
- *     summary: Update a comment by ID
- *     description: Update a single comment by its ID
- *     tags:
- *       - Comments
+ *     summary: Update a comment
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: commentId
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the comment
+ *         description: Comment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Comment'
+ *     responses:
+ *       200:
+ *         description: Comment updated successfully
+ *       400:
+ *         description: Problem with updating comment
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/comment/:commentId', authMiddleware, commentsControllers.updateComment);
+
+/**
+ * @swagger
+ * /comments/{commentId}:
+ *   delete:
+ *     summary: Delete a comment
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Comment ID
  *     requestBody:
  *       required: true
  *       content:
@@ -176,47 +104,39 @@ router.get('/:id', commentController.getById.bind(commentController));
  *           schema:
  *             type: object
  *             properties:
- *               content:
+ *               userId:
  *                 type: string
- *                 description: The content of the comment
- *     responses:
- *       200:
- *         description: Comment updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Comment'
- *       404:
- *         description: Comment not found
- *       500:
- *         description: Server error
- */
-
-router.put('/:id', commentController.update.bind(commentController));
-/**
- * @swagger
- * /comments/{id}:
- *   delete:
- *     summary: Delete a comment by ID
- *     description: Delete a single comment by its ID
- *     tags:
- *       - Comments
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the comment
  *     responses:
  *       200:
  *         description: Comment deleted successfully
- *       404:
- *         description: Comment not found
+ *       400:
+ *         description: You are not the owner of this comment
  *       500:
- *         description: Server error
+ *         description: Internal server error
  */
+router.delete('/comment/:commentId', authMiddleware, commentsControllers.deleteComment);
 
-router.delete('/:id', commentController.deleteItem.bind(commentController));
+/**
+ * @swagger
+ * /comments/post/{postId}:
+ *   get:
+ *     summary: Get all comments for a post
+ *     tags: [Comments]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Comments fetched successfully
+ *       400:
+ *         description: Problem with fetching comments
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/comment/get-all-comments/:postId', commentsControllers.getComments);
 
 export default router;

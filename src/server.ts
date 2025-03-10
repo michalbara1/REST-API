@@ -10,25 +10,22 @@ import usersRoute from "./routes/userRoutes";
 import authRoute from "./routes/authRoutes";
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  res.header("Access-Control-Allow-Methods", "*");
-  next();
-});
-app.use("/posts", postsRoute);
-app.use("/comments", commentsRoute);
-app.use("/users", usersRoute);
-app.use("/auth", authRoute);
-app.use("/file", fileRoute);
-
-app.use("/storage", express.static("storage"));
-app.use("/public", express.static("public"));
-app.use(express.static("front"));
+//app.use((req, res, next) => {
+//  res.header("Access-Control-Allow-Origin", "*");
+//  res.header("Access-Control-Allow-Headers", "*");
+//  res.header("Access-Control-Allow-Methods", "*");
+//  next();
+//});
+app.use(cors());
+//app.use("/posts", postsRoute);
+//app.use("/comments", commentsRoute);
+//app.use("/users", usersRoute);
+//app.use("/auth", authRoute);
 
 const options = {
   definition: {
@@ -48,6 +45,14 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 const db = mongoose.connection;
 db.on("error", (error) => console.error(error));
 db.once("open", () => console.log("Connected to database"));
+
+app.use('/', authRoute);
+app.use('/', postsRoute);
+app.use('/', commentsRoute);
+
+app.use('/storage', express.static('storage'));
+app.use("/public", express.static("public"));
+app.use(express.static("front"));
 
 const initApp = () => {
   return new Promise<Express>((resolve, reject) => {

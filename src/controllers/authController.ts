@@ -1,220 +1,192 @@
-
-import { NextFunction, Request, Response } from 'express';
-import userModel, { IUser } from '../models/userModel';
+import { Request, Response } from 'express';
+import { Types } from 'mongoose';
+import {responseReturn}  from '../utils/response';
+import User from '../models/userModel';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { Document } from 'mongoose';
+import { createToken } from '../utils/token';
+import postModel from '../models/postModel';
+import commentsModel from '../models/commentModel';
 
-const register = async (req: Request, res: Response) => {
+
+class authControllers {
+
+login = async (req: Request, res: Response): Promise<void> => {
+    const {email,password} =req.body
+    
+    if(!email || !password){
+      responseReturn(res,400,{error : "password and email are required"})
+    }
+  try {
+      const user = await User.findOne({email})
+      if(!user){
+            responseReturn(res,400,{error : "password or email are not found"})
+            return;
+      }
+      const isValid = user.password ? await bcrypt.compare(password, user.password) : false;
+      if(!isValid){
+            responseReturn(res,400,{error : "password or email are not found"})
+            return;
+      }
+      const accessToken  = await createToken({ id: user._id },"1h")
+      const refreshToken = await createToken({ id: user._id }, "7d");
+      user.refreshTokens = user.refreshTokens ? [...(user.refreshTokens as string[]), refreshToken] : [refreshToken];
+      await user.save();
+      responseReturn(res,200,{refreshToken, accessToken, message : "login ok", user})
+    
+  } catch (error) {
+    console.error('Login error:', error)
+      responseReturn(res,500,{error : "internal server error"})
+  }
+}
+
+register = async (req: Request, res: Response): Promise<void> => {
+    console.log("Registration request received");
+    console.log("Request body:", req.body);
+    
+    const { email, password, userName } = req.body;
+    let image = req.body.image || req.body.imageUrl;
+
+    console.log("Extracted values:", { email, password, userName: userName, imageReceived: !!image });
+
+    if (!email || !password || !userName) {
+        console.log("Validation failed - missing required fields");
+        responseReturn(res, 400, { error: "All fields are required" });
+        return;
+    }
+
     try {
-        const { email, password, avatar } = req.body;
-        if (!email || !password) {
-            return res.status(400).send("Email and password are required.");
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            console.log("User already exists with email:", email);
+            responseReturn(res, 400, { error: "User already exists" });
+            return;
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await userModel.create({
-            email,
-            password: hashedPassword,
-            avatar: avatar || null, 
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(password, salt);
+        const profileImage = image || '/public/user.png';  
+
+        console.log("Creating user with:", { 
+            email, 
+            passwordHashed: true, 
+            userName, 
+            image: profileImage 
         });
-        res.status(200).send(user);
-    } catch (err) {
-        console.error('Registration Error:', err); 
-        res.status(400).send(err || "Unknown error during registration");
+
+        const user = await User.create({
+            email,
+            password: hashPassword,
+            userName,
+            image: profileImage 
+        });
+        
+        console.log("User created successfully");
+        responseReturn(res, 200, { user, message: "Registration successful" });
+    } catch (error) {
+        console.error("Registration error:", error);
+        responseReturn(res, 500, { error: "Something went wrong", details: error });
     }
 };
 
-
-type tTokens = {
-    accessToken: string,
-    refreshToken: string
-}
-
-const generateToken = (userId: string): tTokens | null => {
-    if (!process.env.TOKEN_SECRET) {
-        return null;
+   //end
+refreshToken = async (req: Request, res: Response): Promise<void> => {
+    const { refreshToken } = req.query;
+    if (!refreshToken) {
+        responseReturn(res, 400, { error: "Refresh token is required" });
+        return;
     }
-    // generate token
-    const random = Math.random().toString();
-    const accessToken = jwt.sign({
-        _id: userId,
-        random: random
-    },
-        process.env.TOKEN_SECRET,
-        { expiresIn: process.env.TOKEN_EXPIRES });
-
-    const refreshToken = jwt.sign({
-        _id: userId,
-        random: random
-    },
-        process.env.TOKEN_SECRET,
-        { expiresIn: process.env.REFRESH_TOKEN_EXPIRES });
-    return {
-        accessToken: accessToken,
-        refreshToken: refreshToken
-    };
-};
-const login = async (req: Request, res: Response) => {
     try {
-        const user = await userModel.findOne({ email: req.body.email });
+        const user = await User.findOne({ refreshTokens: refreshToken });
         if (!user) {
-            res.status(400).send('wrong username or password');
+            responseReturn(res, 400, { error: "Invalid refresh token" });
             return;
         }
-        const validPassword = await bcrypt.compare(req.body.password, user.password);
-        if (!validPassword) {
-            res.status(400).send('wrong username or password');
-            return;
-        }
-        if (!process.env.TOKEN_SECRET) {
-            res.status(500).send('Server Error');
-            return;
-        }
-        // generate token
-        const tokens = generateToken(user._id);
-        if (!tokens) {
-            res.status(500).send('Server Error');
-            return;
-        }
-        if (!user.refreshToken) {
-            user.refreshToken = [];
-        }
-        user.refreshToken.push(tokens.refreshToken);
-        await user.save();
-        res.status(200).send(
-            {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-                _id: user._id,
-                avatar: user.avatar,
-            });
-
-    } catch (err) {
-        res.status(400).send(err);
+        const newAccessToken = await createToken({ id: user._id }, "1h");
+        responseReturn(res, 200, { token: newAccessToken });
+    } catch (error) {
+        responseReturn(res, 500, { error: "Internal server error" });
     }
-};
-
-type tUser = Document<unknown, {}, IUser> & IUser & Required<{
-    _id: string;
-}> & {
-    __v: number;
 }
-const verifyRefreshToken = (refreshToken: string | undefined) => {
-    return new Promise<tUser>((resolve, reject) => {
-        //get refresh token from body
-        if (!refreshToken) {
-            reject("fail");
-            return;
-        }
-        //verify token
-        if (!process.env.TOKEN_SECRET) {
-            reject("fail");
-            return;
-        }
-        jwt.verify(refreshToken, process.env.TOKEN_SECRET, async (err: any, payload: any) => {
-            if (err) {
-                reject("fail");
-                return
-            }
-            //get the user id fromn token
-            const userId = payload._id;
-            try {
-                //get the user form the db
-                const user = await userModel.findById(userId);
-                if (!user) {
-                    reject("fail");
-                    return;
-                }
-                if (!user.refreshToken || !user.refreshToken.includes(refreshToken)) {
-                    user.refreshToken = [];
-                    await user.save();
-                    reject("fail");
-                    return;
-                }
-                const tokens = user.refreshToken!.filter((token) => token !== refreshToken);
-                user.refreshToken = tokens;
 
-                resolve(user);
-            } catch (err) {
-                reject("fail");
+    logout = async (req: Request, res: Response): Promise<void> => {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            responseReturn(res, 400, { error: "Refresh token is required" });
+            return;
+        }
+        try {
+            const user = await User.findOne({ refreshTokens: refreshToken });
+            if (!user) {
+                responseReturn(res, 400, { error: "Invalid refresh token" });
                 return;
             }
-        });
-    });
+            user.refreshTokens =(user.refreshTokens as string[]).filter(token => token !== refreshToken);
+            await user.save();
+            responseReturn(res, 200, { message: "Logout successful" });
+        } catch (error) {
+            responseReturn(res, 500, { error: "Internal server error" });
+        }
+    }
+
+    getUserInfo = async (req: Request, res: Response): Promise<void> => {
+        const {userId} = req.body;
+    
+        const user = await User.findById(new Types.ObjectId(userId));
+      
+        if(user){
+            const image = user.image ? user.image : null;
+            const userName = user.userName ? user.userName : null;
+            const userId = user._id.toString();
+            responseReturn(res,200,{image, userName , userId});
+            return;
+        }
+        else{
+            responseReturn(res,400,{error : "user not found"});
+        }
+    }
+
+    profileUpdate = async (req: Request, res: Response): Promise<void> => {
+        const {userId,image,userName} = req.body;
+    
+        const user = await User.findByIdAndUpdate(new Types.ObjectId(userId), {image , userName} , {new : true});
+
+         await postModel.updateMany({'ownerId': new Types.ObjectId(userId) },{userImg :image ,userName} , {new : true});
+       
+         await commentsModel.updateMany({'ownerId': new Types.ObjectId(userId) },{userImg :image ,userName} , {new : true});
+      
+       
+        if(user){
+            responseReturn(res,200,{image, userName });
+            return;
+        }   
+        else{
+            responseReturn(res,400,{error : "user not found"});
+        }
+    }
+    googlelogin = async (req: Request, res: Response): Promise<void> => {
+        const { email, name } = req.body;
+        if (!email) {
+            responseReturn(res, 400, { error: "Email is required" });
+            return;
+        }
+        try {
+            let user = await User.findOne({email})
+            if(!user){
+                user = await User.create({
+                        email,
+                        userName : name,
+                    });
+            }
+            const accessToken  = await createToken({ id: user._id },"1h")
+            const refreshToken = await createToken({ id: user._id }, "7d");
+            user.refreshTokens = user.refreshTokens ? [...(user.refreshTokens as string[]), refreshToken] : [refreshToken];
+            await user.save();
+            responseReturn(res,200,{refreshToken, accessToken, message : "login ok", user})
+          
+        } catch (error) {
+            responseReturn(res,500,{error : "internal server error"})
+        }
+    }
+
 }
-
-const logout = async (req: Request, res: Response) => {
-    try {
-        const user = await verifyRefreshToken(req.body.refreshToken);
-        await user.save();
-        res.status(200).send("success");
-    } catch (err) {
-        res.status(400).send("fail");
-    }
-};
-
-const refresh = async (req: Request, res: Response) => {
-    try {
-        const user = await verifyRefreshToken(req.body.refreshToken);
-        if (!user) {
-            res.status(400).send("fail");
-            return;
-        }
-        const tokens = generateToken(user._id);
-
-        if (!tokens) {
-            res.status(500).send('Server Error');
-            return;
-        }
-        if (!user.refreshToken) {
-            user.refreshToken = [];
-        }
-        user.refreshToken.push(tokens.refreshToken);
-        await user.save();
-        res.status(200).send(
-            {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-                _id: user._id
-            });
-        //send new token
-    } catch (err) {
-        res.status(400).send("fail");
-    }
-};
-
-type Payload = {
-    _id: string;
-};
-
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const authorization = req.header('authorization');
-    if (!authorization) {
-        return res.status(401).send("Access Denied");
-    }
-    const token = authorization && authorization.split(' ')[1];
-    if (!token) {
-        res.status(401).send('Access Denied');
-        return;
-    }
-    if (!process.env.TOKEN_SECRET) {
-        res.status(500).send('Server Error');
-        return;
-    }
-
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, payload) => {
-        if (err) {
-            res.status(401).send('Access Denied');
-            return;
-        }
-        req.params.userId = (payload as Payload)._id;
-        next();
-    });
-};
-
-export default {
-    register,
-    login,
-    refresh,
-    logout
-};
+export default new authControllers();
